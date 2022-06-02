@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const User = require('../model/User');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { validaRegistrazione, validaLogin } = require('../model/validation');
 
@@ -28,7 +29,7 @@ router.post('/register', async (req, res) => {
         password: hashedPassword
     });
     try {
-        await user.save();
+        const savedUser = await user.save();
         res.send({ user: user._id });
     } catch (err) {
         res.status(400).send(err);
@@ -55,8 +56,13 @@ router.post('/login', async (req, res) => {
     if (!validPass) {
         return res.status(400).send('Email o password non corretti');
     }
+
     
-    res.send('Accesso riuscito');
+    // Genero il JWT per l'autenticazione successiva alle api
+    const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
+
+    // Ritorno il token (anche nell'header) per salvarlo poi nel client 
+    return res.header('auth-token', token).send(token);
 });
 
 module.exports = router;
